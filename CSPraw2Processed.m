@@ -18,10 +18,16 @@ dbfile = fullfile([DB_path filesep 'CoastSnapDB.xlsx']);
 
 %Read image times - make sure Excel format is as below
 if isempty(strfind(txt{2,3},'PM'))||isempty(strfind(txt{2,3},'AM')) %if using AM/PM
-    imtimes = datenum(char(txt{2:end,3}),'dd/mm/yyyy HH:MM:SS AM');
+    imtimes = datenum(char(txt{2:end,3}),'mm/dd/yyyy HH:MM:SS AM');
 else
-    imtimes = datenum(char(txt{2:end,3}),'dd/mm/yyyy HH:MM:SS'); %if using 24 hour clock
+    imtimes = datenum(char(txt{2:end,3}),'mm/dd/yyyy HH:MM:SS'); %if using 24 hour clock
 end
+
+if isempty(imtimes)
+    imtimes = datenum(datetime(data(:,1),'convertfrom','excel'));
+end
+
+
 
 %Convert to GMT time
 imtimesGMT = imtimes;
@@ -56,11 +62,11 @@ for i = 1:length(images)
         timequality = questdlg('Please select the accuracy of the image time (1 = stated time, 2 = good upload time, 3 = poor upload time)','Image time accuracy',1,2,3,2);
         if timequality~=2 %If the user actually stated the time
             newtime = inputdlg('Please input the time as indicated by the user, or if quality=3 take a guess (format dd/mm/yyyy HH:MM)','New time',1,{datestr(fourKstogramdate,'dd/mm/yyyy HH:MM')});
-            fourKstogramdate = datenum(char(newtime),'dd/mm/yyyy HH:MM');
+            fourKstogramdate = datenum(char(newtime),'mm/dd/yyyy HH:MM');
         end
         startcell = ['A' num2str(lastrow)];
         imtype = 'Snap'; %Assume it is a snap
-        newdata = [site,user, datestr(fourKstogramdate,'dd/mm/yyyy HH:MM'),timezone,filename,'Instagram',imtype,timequality];
+        newdata = [site,user, datestr(fourKstogramdate,'mm/dd/yyyy HH:MM'),timezone,filename,'Instagram',imtype,timequality];
         xlswrite(dbfile,newdata,'database',startcell) %Write new line in spreadsheet
         %Get GMT Time
         if strcmp(timezone,siteDB.timezone.name);

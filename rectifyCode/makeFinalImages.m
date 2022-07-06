@@ -6,6 +6,10 @@ function finalImages = makeFinalImages(images)
 
 finalImages.dn = images.dn(1);
 N = repmat(images.N,[1 1 3]);
+
+if isempty(N)
+    N = 1;
+end
 finalImages.x = images.x;
 finalImages.y = images.y;
 finalImages.timex = uint8(images.sumI./N);

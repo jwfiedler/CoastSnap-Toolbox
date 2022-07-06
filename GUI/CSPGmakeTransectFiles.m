@@ -27,10 +27,10 @@ else
     marker_dist = 5; %Spacings of the transects. Set nominally to 5m but could be higher resolution
     %x = sl(:,1)';
     %y = sl(:,2)';
-    x = sl.Position(:,1)'; %For when using drawpolyline
-    y = sl.Position(:,2)'; %For when using drawpolyline
+    x = sl.Position(:,1)' %For when using drawpolyline
+    y = sl.Position(:,2)' %For when using drawpolyline
     dist_from_start = cumsum( [0, sqrt((x(2:end)-x(1:end-1)).^2 + (y(2:end)-y(1:end-1)).^2)] );
-    marker_locs = 0 : marker_dist : dist_from_start(end);   %replace with specific distances if desired
+    marker_locs = 0 : marker_dist : dist_from_start(end)   %replace with specific distances if desired
     marker_indices = interp1( dist_from_start, 1 : length(dist_from_start), marker_locs);
     marker_base_pos = floor(marker_indices);
     weight_second = marker_indices - marker_base_pos;
@@ -69,6 +69,10 @@ else
             Icut = [Icut i];
         end
     end
+    
+%     Y2ends
+    
+    
     marker_locs(Icut) = [];
     I = find(isnan(X2ends(1,:)));
     X2ends(:,I) = [];
