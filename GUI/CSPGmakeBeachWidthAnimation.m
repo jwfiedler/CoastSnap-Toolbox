@@ -101,6 +101,8 @@ f = fit(dates',av_bw','smoothingspline','SmoothingParam',0.1);
 plot(dates,f(dates),'color','k','linewidth',1)
 xlim([min(dates) max(dates)])
 datetick('x','keeplimits')
+set(gca,'ygrid','on')
+set(gca,'xgrid','on')
 ylabel('Beach width (m)','fontsize',11)
 YL = ylim;
 XL = xlim;
@@ -125,7 +127,11 @@ hor_mar3 = [width-hor_mar(2)-ax_width hor_mar(2)];
 geomplot(1,1,1,1,width,ax_height3,hor_mar3,ver_mar3,mid_mar)
 image(Ics)
 axis off
-print(fig,fullfile(output_path,'frame_001.jpg'),'-djpeg','-r300')
+if exist('exportgraphics','file')~=0
+    exportgraphics(fig,fullfile(output_path,'frame_001.jpg'),'Resolution',300) %Exportgraphics only from Matlab 2020 onwards
+else
+    print(fig,fullfile(output_path,'frame_001.jpg'),'-djpeg','-r300')
+end
 
 %Now loop over other images
 for i = 2:navepochs %Loop over all images, not just images with shorelines
