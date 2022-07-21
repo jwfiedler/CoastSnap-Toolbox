@@ -5,7 +5,9 @@
 %Mitch Harley, June 2018
 
 %Load various paths
-base_path = '/Users/juliafiedler/Documents/CoastSnapDocs/CoastSnap/';
+base_path = fileparts(fileparts(pwd));
+
+% base_path = '\\reefbreak1.ucsd.edu\group\CoastSnap\CoastSnap\Code\';
 %base_path = 'D:\Google Drive\CoastSnap';
 DB_path = fullfile(base_path,'Database'); %Path where database is located
 image_path = fullfile(base_path,'Images'); %Path where all images are stored
