@@ -39,7 +39,8 @@ if go ==1
     load(fullfile(transect_dir,siteDB.sl_settings.transect_file)) %transect_dir found from CSPloadPaths
     
     %Map Shoreline
-    addpath('../Shoreline-Mapping-Toolbox') %Relevant file (mapShorelineCCD.m) found in shoreline mapping toolbox
+%     addpath('..\Shoreline-Mapping-Toolbox') %Relevant file (mapShorelineCCD.m) found in shoreline mapping toolbox
+    addpath('Code/Shoreline-Mapping-Toolbox') %Relevant file (mapShorelineCCD.m) found in shoreline mapping toolbox
     type = 'CCD'; %Only consider CCD here
     if strcmp(type,'CCD')
         sl = mapShorelineCCD(data_plan.xgrid,data_plan.ygrid,data_plan.Iplan,SLtransects,0,0); %Turn edit and plot mode off in GUI

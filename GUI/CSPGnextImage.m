@@ -12,6 +12,6 @@ if I<length(data.navigation.epochs)
     %Reload data to GUI with new image path and file
     CSPGloadImage(handles,newpath,newfile);
 else
-    disp('You have reached the final image. Please stop pressing next for everyone''s sake')
+    disp('You have reached the final image. ANDRE Please stop pressing next for everyone''s sake')
 end
 

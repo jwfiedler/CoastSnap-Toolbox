@@ -143,7 +143,8 @@ function maketrendplot_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-CSPGmakeTrendPlot(handles)
+CSPGmakeTrendPlotMOP(handles)
+
 
 % --- Executes on button press in radiobutton1.
 function radiobutton1_Callback(hObject, eventdata, handles)
@@ -298,6 +299,7 @@ function PlotShorelineChange_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 CSPGmakeShorelineChangePlot(handles)
+% CSPGmakeShorelineChangePlotWIP(handles)
 
 
 
@@ -413,3 +415,10 @@ function make_transect_files_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 CSPGmakeTransectFiles(handles)
+
+function plotMOPS_Callback(hObject, eventdata, handles)
+% hObject    handle to maketrendplot (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+CSPGplotMOPS(handles)

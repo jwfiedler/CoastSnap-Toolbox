@@ -8,6 +8,7 @@ CSPloadPaths %Load data paths
 fileparts = CSPparseFilename(data.fname);
 rect_path = strrep(data.pname,'Processed','Rectified');
 rect_path = strrep(rect_path,'Registered','Rectified'); %For Registered images
+
 rect_name = strrep(data.fname,'snap','plan'); %Rectified is called plan to keep with Argus conventions
 rect_name = strrep(rect_name,'timex','plan'); %For timex images
 rect_name = strrep(rect_name,'jpg','mat'); %Need to load mat file
@@ -17,6 +18,9 @@ if ~exist(fullfile(rect_path,rect_name),'file')
     warndlg('Image has not been rectified. Please rectify image (Step 2) and try again','Image not rectified')
 else
     load(fullfile(rect_path,rect_name)) %Load geometry
+    if ~ispc
+        disp('Select last image of bulk rectify and map')
+    end
     [fname,~]=uigetfile([data.pname filesep '*.jpg'],'Select last image of bulk rectify and map');
     endfile = CSPparseFilename(fname);
     endepoch = str2num(endfile.epochtime);
@@ -31,7 +35,7 @@ else
             disp(['Rectifying and mapping ' num2str(i) ' of ' num2str(length(II)) ' images'])
             
             %First step is to rectify
-            %First check if rectify image already exists
+            %First check if rectified image already exists
             newfname = data.navigation.files(II(i)).name;
             newpname = data.navigation.paths(II(i)).name;
             I = imread(fullfile(newpname,newfname)); %Read image
@@ -56,7 +60,7 @@ else
             tide_level = CSPgetTideLevel(str2num(fileparts.epochtime),data.site);
             inputs.rectxy = [siteDB.rect.xlim(1) siteDB.rect.res siteDB.rect.xlim(2) siteDB.rect.ylim(1) siteDB.rect.res siteDB.rect.ylim(2)]; % rectification specs
             inputs.tide_offset = siteDB.rect.tidal_offset;
-            inputs.rectz = tide_level+inputs.tide_offset; % rectification z-leve
+            inputs.rectz = tide_level+inputs.tide_offset; % rectification z-level
             images.xy = inputs.rectxy;
             images.z = inputs.rectz;
             images = buildRectProducts(1, images, I, metadata.geom.betas, metadata.geom); %Metadata from original image

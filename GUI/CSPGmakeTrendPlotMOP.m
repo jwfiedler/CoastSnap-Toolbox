@@ -1,14 +1,21 @@
-function CSPGmakeTrendPlot(handles)
+function CSPGmakeTrendPlotMOP(handles)
 
+CSPloadPaths
+addpath(fullfile(fileparts(base_path),'MOPS'))
+MopNum = 581:589;
+transect_nos = 1:7; %%%%
+% [t,beachWidth_timeseries] = get_beachwidth(MopNum,base_path);
+[t,~,beachSlope_timeseries] = get_beachwidth(MopNum(transect_nos),base_path);
+slope = mean(nanmean(beachSlope_timeseries(:)));
 
 %Get data from handles
 data = get(handles.oblq_image,'UserData');
 data_plan = get(handles.plan_image,'UserData');
 width = 20; %Width of figure in cm
-transect_nos = data.siteDB.sl_settings.transect_averaging_region; %Transects to average over
+% transect_nos = data.siteDB.sl_settings.transect_averaging_region; %Transects to average over
 trendinterval = str2num(get(handles.trendinterval,'String')); %In days (usually 6 weeks)
 trendinterval_seconds = trendinterval*3600*24;
-slope = data.siteDB.sl_settings.beach_slope;
+% slope = data.siteDB.sl_settings.beach_slope;
 sl_cutoff = 8;
 
 %Get shoreline list for site
@@ -38,7 +45,11 @@ hold on
 
 %Load SL transect file
 CSPloadPaths
-load(fullfile(shoreline_path,'Transect Files',data.siteDB.sl_settings.transect_file))
+% load(fullfile(shoreline_path,'Transect Files',data.siteDB.sl_settings.transect_file))
+load(fullfile(shoreline_path,'Transect Files','SLtransectsMOP.mat'))
+SLtransects = SLtransectsMOP;
+SLtransects.alongshore_distances = [100 200 300 400 500 600 700 800 900];
+
 
 %Loop through shorelines
 metadata = data_plan.metadata;
@@ -56,12 +67,12 @@ for i = 1:length(Icommon)
     slfile = strrep(slfile,'.jpg','.mat');
     if exist(fullfile(sldir,slfile)) %Catch in case shoreline was mapped on registered image
         load(fullfile(sldir,slfile));
-%     else
-%         slfile = strrep(slfile,'.mat','_registered.mat');
-%         load(fullfile(sldir,slfile));
+    else
+        slfile = strrep(slfile,'_registered.mat','.mat');
+        load(fullfile(sldir,slfile));
     end
     
-    if length(Icommon)<sl_cutoff %Only plot shorelines if < sl_cutoff
+    if length(Icommon)>sl_cutoff %Only plot shorelines if > sl_cutoff %%CHANGED HERE to <
         UV = findUVnDOF(metadata.geom.betas,sl.xyz,metadata.geom);
         UV = reshape(UV,length(sl.xyz),2);
         plot(UV(:,1),UV(:,2),'linewidth',1,'color',colors(i,:))

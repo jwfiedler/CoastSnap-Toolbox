@@ -6,11 +6,18 @@ data = get(handles.oblq_image,'UserData');
 data_plan = get(handles.plan_image,'UserData');
 width = 20; %Width of figure in cm
 transect_nos = data.siteDB.sl_settings.transect_averaging_region; %Transects to average over
+transect_nos_MOP = [1:9] %%%%
 trendinterval = str2num(get(handles.trendinterval,'String')); %In days (usually 6 weeks)
 trendinterval_seconds = trendinterval*3600*24;
 slope = data.siteDB.sl_settings.beach_slope;
 %Prompt user to select output path to save frames
-output_path = uigetdir(data.path, 'Select output directory for beach width animation frames and time-series data');
+if ispc
+    output_path = uigetdir(data.path, 'Select output directory for beach width animation frames and time-series data');
+else
+    disp('Select output directory for beach width animation frames and time-series data');
+
+    output_path = uigetdir(data.path);
+end
 
 %% First Calculate BW time-series
 
@@ -29,6 +36,10 @@ navpaths = data.navigation.paths(Icut);
 %Load SL transect file
 CSPloadPaths
 load(fullfile(shoreline_path,'Transect Files',data.siteDB.sl_settings.transect_file))
+%%TODO ADD PATH TO LOAD MOP SHORELINE FILE
+% load('\\reefbreak.ucsd.edu\group\CoastSnap\Shorelines\Transect Files\SLtransectsMOP.mat'); %%%%
+load(fullfile(shoreline_path,'Transect Files','SLtransectsMOP.mat'))
+
 
 %Loop through shorelines
 p =NaN(length(Icommon),length(transect_nos)); %beach width matrix to calculate alongshore-average beach width based on defined transects
@@ -51,11 +62,32 @@ for i = 1:length(Icommon)
     bw_corr = (0-sl.xyz(1,3))/slope; %now project to MSL instead of tide level from first image. Slope taken from characteristic beach slope in CoastSnapDB
     p(i,:) = p(i,:)-bw_corr;
 end
+
+pMOP =NaN(length(Icommon),length(transect_nos_MOP)); %beach width matrix to calculate alongshore-average beach width based on defined transects
+for i = 1:length(Icommon)
+    load(fullfile(slpaths(Icommon(i)).name,slfiles(Icommon(i)).name))
+    for j = 1:length(transect_nos_MOP)
+        [x_int,y_int] = polyxpoly(sl.xyz(:,1),sl.xyz(:,2),SLtransectsMOP.x(:,transect_nos_MOP(j)),SLtransectsMOP.y(:,transect_nos_MOP(j)));
+        if length(x_int)>1
+            warning('More than 1 intersection point detected between shoreline and transect')
+        end
+        if ~isempty(x_int)
+            pMOP(i,j) = sqrt((x_int(1)-SLtransectsMOP.x(1,transect_nos_MOP(j)))^2+(y_int(1)-SLtransectsMOP.y(1,transect_nos_MOP(j)))^2); %If more than 1 intersection, choose the most landward
+        else
+            %disp(['Warning: shoreline does not intersect with transect number ' num2str(transect_nos(j))])
+        end
+    end
+    %Tidally-correct data
+    %bw_corr = (data.tide_level-sl.xyz(1,3))/slope; %Slope taken from characteristic beach slope in CoastSnapDB
+    bw_corr = (0-sl.xyz(1,3))/slope; %now project to MSL instead of tide level from first image. Slope taken from characteristic beach slope in CoastSnapDB
+    pMOP(i,:) = pMOP(i,:)-bw_corr;
+end
+
 disp('Done')
 
 %% Now make animation
 fig=figure;
-set(gcf,'color','w')
+set(fig,'color','w')
 I = imread(fullfile(navpaths(1).name,navfiles(1).name));
 ax_height = width*size(I,1)/size(I,2);
 ax_height2 = 3;
@@ -64,10 +96,17 @@ plot_bot = 1.2;
 hor_mar = [0.2 0.2];
 ver_mar = [0.2 ax_height2+plot_gap+plot_bot];
 mid_mar = [0 0];
+
 geomplot(1,1,1,1,width,ax_height,hor_mar,ver_mar,mid_mar)
 ax1 = gca;
 image(I)
 axis off
+
+annotation('line', [0, 0], [0, 1], 'LineWidth', 1, 'Color', 'k');
+annotation('line', [1, 1], [0, 1], 'LineWidth', 1, 'Color', 'k');
+annotation('line', [0, 1], [0, 0], 'LineWidth', 1, 'Color', 'k');
+annotation('line', [1, 0], [1, 1], 'LineWidth', 1, 'Color', 'k');
+
 
 %Icut = find(navepochs>slepochs(Icommon(1)));
 %navepochs = data.navigation.epochs(Icut);
@@ -80,7 +119,7 @@ if ismember(navepochs(1),slepochs)
     slfile = strrep(navfiles(1).name,'snap','shoreline');
     slfile = strrep(slfile,'timex','shoreline');
     slfile = strrep(slfile,'.jpg','.mat');
-    if isfile(fullfile(sldir,slfile))
+    if isfile(fullfile(sldir,slfile)) 
         load(fullfile(sldir,slfile))
         hold on
         plot(sl.UV(:,1),sl.UV(:,2),'r','linewidth',2)
@@ -94,13 +133,25 @@ hor_mar2 = [1.5 width/2.5];
 geomplot(1,1,1,1,width,ax_height2,hor_mar2,ver_mar2,mid_mar)
 ax2 = gca;
 dates = CSPepoch2LocalMatlab(slepochs(Icommon),data.siteDB.timezone.gmt_offset);
+av_bwMOP = nanmean(pMOP');
 av_bw = nanmean(p');
-plot(dates,av_bw,'x','color',0.7*[1 1 1])
+
+dates(isnan(av_bw)) = [];
+av_bw(isnan(av_bw)) = [];
+av_bwMOP(isnan(av_bwMOP)) = [];
+kk = find(~isnan(av_bwMOP));
+
+plot(datetime(dates(kk),'ConvertFrom','datenum'),av_bwMOP(kk),'x','color',0.7*[1 1 1])
 hold on
-f = fit(dates',av_bw','smoothingspline','SmoothingParam',0.1);
-plot(dates,f(dates),'color','k','linewidth',1)
-xlim([min(dates) max(dates)])
-datetick('x','keeplimits')
+% f = fit(dates',av_bw','smoothingspline','SmoothingParam',0.1);
+
+fMOP = fit(dates(kk)',av_bwMOP(kk)','smoothingspline','SmoothingParam',0.1);
+
+% plot(datetime(dates,'ConvertFrom','datenum'),f(dates),'color','k','linewidth',1)
+plot(datetime(dates(kk),'ConvertFrom','datenum'),fMOP(dates(kk)),'color','k','linewidth',1)
+
+xlim([min(datetime(dates,'ConvertFrom','datenum')) max(datetime(dates,'ConvertFrom','datenum'))])
+% datetick('x','keeplimits')
 set(gca,'ygrid','on')
 set(gca,'xgrid','on')
 ylabel('Beach width (m)','fontsize',11)
@@ -108,14 +159,14 @@ YL = ylim;
 XL = xlim;
 hold on
 dd =  CSPepoch2LocalMatlab(navepochs(1),data.siteDB.timezone.gmt_offset);
-counter = plot([dd(1) dd(1)],[YL(1) YL(2)],'r','linewidth',2); 
-bw_now = f(CSPepoch2LocalMatlab(navepochs(1),data.siteDB.timezone.gmt_offset));
+counter = plot(datetime([dd(1) dd(1)],'ConvertFrom','datenum'),[YL(1) YL(2)],'r','linewidth',2); 
+bw_now = fMOP(CSPepoch2LocalMatlab(navepochs(1),data.siteDB.timezone.gmt_offset));
 text(XL(2)+0.1*diff(XL),YL(1)+0.7*diff(YL),'Beach width','fontsize',20,'color','b','fontname','Berlin Sans FB');
-bw_text = text(XL(2)+0.1*diff(XL),YL(1)+0.45*diff(YL),[num2str(bw_now,'%0.1f') ' metres'],'fontsize',20,'color','r','fontname','Berlin Sans FB');
+bw_text = text(XL(2)+0.1*diff(XL),YL(1)+0.45*diff(YL),[num2str(bw_now,'%0.1f') ' meters'],'fontsize',20,'color','r','fontname','Berlin Sans FB');
 ylim(YL)
 
 %Save beachwidth time-series data to csv file in output directory
-M = [datevec(dates) av_bw' f(dates)]; %8-column matrix of dates, alongshore-averaged beach width and smoothed beach width
+M = [datevec(dates(kk)) av_bwMOP(kk)' fMOP(dates(kk))]; %8-column matrix of dates, alongshore-averaged beach width and smoothed beach width
 writematrix(M,fullfile(output_path,['beachwidth_timeseries_' data.site '.csv']))
 
 %Put coastsnap logo
@@ -128,13 +179,15 @@ geomplot(1,1,1,1,width,ax_height3,hor_mar3,ver_mar3,mid_mar)
 image(Ics)
 axis off
 if exist('exportgraphics','file')~=0
-    exportgraphics(fig,fullfile(output_path,'frame_001.jpg'),'Resolution',300) %Exportgraphics only from Matlab 2020 onwards
+%         exportgraphics(fig,fullfile(output_path,'beachwidth.gif'),'Resolution',300) %Exportgraphics only from Matlab 2020 onwards
+
+    exportgraphics(fig,fullfile(output_path,'frame_001.jpg'),'Resolution',150) %Exportgraphics only from Matlab 2020 onwards
 else
     print(fig,fullfile(output_path,'frame_001.jpg'),'-djpeg','-r300')
 end
-
+%%
 %Now loop over other images
-for i = 2:navepochs %Loop over all images, not just images with shorelines
+for i = 2:length(navepochs) %Loop over all images, not just images with shorelines
     axes(ax1)
     imdata = CSPparseFilename(navfiles(i).name);
     I = imread(fullfile(navpaths(i).name,navfiles(i).name));
@@ -157,10 +210,14 @@ for i = 2:navepochs %Loop over all images, not just images with shorelines
     axes(ax2)
     dd =  CSPepoch2LocalMatlab(navepochs(i),data.siteDB.timezone.gmt_offset);
     hold on
-    delete(counter)
-    counter = plot([dd dd],[YL(1) YL(2)],'r','linewidth',2);
-    bw_now = f(CSPepoch2LocalMatlab(navepochs(i),data.siteDB.timezone.gmt_offset));
+%     delete(counter)
+    set(counter,'XData',datetime([dd dd],'ConvertFrom','datenum'))
+%     counter = plot(datetime[dd dd],[YL(1) YL(2)],'r','linewidth',2);
+    bw_now = fMOP(CSPepoch2LocalMatlab(navepochs(i),data.siteDB.timezone.gmt_offset));
     delete(bw_text)
-    bw_text = text(XL(2)+0.1*diff(XL),YL(1)+0.45*diff(YL),[num2str(bw_now,'%0.1f') ' metres'],'fontsize',20,'color','r','fontname','Berlin Sans FB');  
-    print(fig,fullfile(output_path,['frame_' num2str(i,'%03.0f') '.jpg']),'-djpeg','-r300')
+    bw_text = text(XL(2)+0.1*diff(XL),YL(1)+0.45*diff(YL),[num2str(bw_now,'%0.1f') ' meters'],'fontsize',20,'color','r','fontname','Berlin Sans FB');  
+%     print(fig,fullfile(output_path,['frame_' num2str(i,'%03.0f') '.jpg']),'-djpeg','-r300')
+    exportgraphics(fig,fullfile(output_path,['frame_' num2str(i,'%03.0f') '.jpg']),'Resolution',150) %Exportgraphics only from Matlab 2020 onwards
+%         exportgraphics(fig,fullfile(output_path,'beachwidth.gif'),'Append','true') %Exportgraphics only from Matlab 2020 onwards
+
 end
