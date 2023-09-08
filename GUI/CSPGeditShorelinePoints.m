@@ -8,25 +8,38 @@ data_plan = get(handles.plan_image,'UserData');
 sl = data_plan.sl;
 metadata = data_plan.metadata;
 siteDB = data.siteDB;
-h = impoly(handles.plan_image,sl.xyz(:,1:2),'closed',0);
+% h = impoly(handles.plan_image,sl.xyz(:,1:2),'closed',0);
+
 disp('Please edit your shoreline now and double click when done')
-wait(h);
+h = drawassisted(handles.oblq_image,"Closed",false,'color','m');
+
 zoom off
-newpos = getPosition(h);
+newpos = h.Position;
 delete(h)
 delete(data.sl_handle_oblq);
 delete(data_plan.sl_handle_plan);
 
 %Update newly edited points
-xyz = NaN(size(newpos,1),3);
-xyz(:,1:2) = newpos;
-xyz(:,3) = sl.xyz(1,3)*ones(size(newpos,1),1);
+% xyz = NaN(size(newpos,1),3);
+% xyz(:,1:2) = newpos;
+% xyz(:,3) = sl.xyz(1,3)*ones(size(newpos,1),1);
+% UTM = [xyz(:,1)+siteDB.origin.eastings xyz(:,2)+siteDB.origin.northings metadata.rectz*ones(size(xyz(:,1)))];
+% UV = findUVnDOF(metadata.geom.betas,xyz,metadata.geom); %Its good practise to store the original Image UV data of the shoreline so you don't have to redo the geometry
+% UV = reshape(UV,size(xyz,1),2);
+% data_plan.sl.xyz = xyz;
+% data_plan.sl.UV = UV;
+% data_plan.sl.UTM = UTM;
+
+UV = reshape(newpos,length(newpos),2);  %ensure proper shape
+P = lcpBeta2P(metadata.geom.lcp,metadata.geom.betas);
+m = P2m(P)
+xyz = findXYZ(m,UV,sl.xyz(1,3),3)
 UTM = [xyz(:,1)+siteDB.origin.eastings xyz(:,2)+siteDB.origin.northings metadata.rectz*ones(size(xyz(:,1)))];
-UV = findUVnDOF(metadata.geom.betas,xyz,metadata.geom); %Its good practise to store the original Image UV data of the shoreline so you don't have to redo the geometry
-UV = reshape(UV,size(xyz,1),2);
 data_plan.sl.xyz = xyz;
 data_plan.sl.UV = UV;
 data_plan.sl.UTM = UTM;
+
+
 
 %Plot edited data;
 axes(handles.oblq_image)
