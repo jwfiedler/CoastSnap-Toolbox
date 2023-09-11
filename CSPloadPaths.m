@@ -6,10 +6,10 @@
 
 %Load various paths
 if ispc
-    base_path = '\\reefbreak1.ucsd.edu\group\CoastSnap';
+    base_path = '\\reefbreak1.ucsd.edu\CoastSnap';
 else
     base_path = fileparts(fileparts(pwd));
-    base_path = fullfile('/Volumes','group','CoastSnap');
+    base_path = fullfile('/Volumes','CoastSnap');
 end
 
 % base_path = '\\reefbreak1.ucsd.edu\group\CoastSnap\CoastSnap\Code\';
